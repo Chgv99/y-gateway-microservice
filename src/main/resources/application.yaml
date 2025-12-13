@@ -29,16 +29,12 @@ spring:
                     #         allowedHeaders: "*"
                     #         allowCredentials: true
                     routes:
-                      - id: service-registry
-                        uri: http://localhost:8081
-                        predicates:
-                        - Path=/service-registry
                       - id: users-service
-                        uri: http://localhost:8082
+                        uri: lb://users
                         predicates:
                             - Path=/api/user, /auth/register, /auth/login
                       - id: posts-service
-                        uri: http://localhost:8083
+                        uri: lb://posts
                         predicates:
                             - Path=/api/post
 
