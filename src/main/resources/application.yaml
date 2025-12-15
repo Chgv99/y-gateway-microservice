@@ -1,6 +1,9 @@
 server:
     port: 8080
 
+jwt:
+    secret: ${JWT_SECRET_KEY}
+
 eureka:
     client:
         service-url:
@@ -32,7 +35,7 @@ spring:
                       - id: users-service
                         uri: lb://users
                         predicates:
-                            - Path=/api/user, /auth/register, /auth/login
+                            - Path=/api/user, /auth/register, /auth/login, /api/demo
                       - id: posts-service
                         uri: lb://posts
                         predicates:
