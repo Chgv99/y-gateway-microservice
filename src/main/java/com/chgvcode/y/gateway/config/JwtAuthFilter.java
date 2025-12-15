@@ -56,16 +56,19 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         }
 
         String userId = claims.getSubject();
+        String userUuid = claims.get("uuid", String.class);
         String roles = claims.get("roles", String.class);
 
         ServerHttpRequest mutatedRequest = exchange.getRequest()
                 .mutate()
                 // limpieza defensiva
                 .headers(h -> {
-                    h.remove("X-User-Id");
+                    h.remove("X-Username");
+                    h.remove("X-User-Uuid");
                     h.remove("X-User-Roles");
                 })
-                .header("X-User-Id", userId)
+                .header("X-Username", userId)
+                .header("X-User-Uuid", userUuid)
                 .header("X-User-Roles", roles)
                 .build();
 
