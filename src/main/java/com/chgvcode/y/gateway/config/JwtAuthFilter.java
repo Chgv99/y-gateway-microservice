@@ -1,40 +1,46 @@
 package com.chgvcode.y.gateway.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
+import com.chgvcode.y.gateway.auth.JwtService;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import reactor.core.publisher.Mono;
 
 @Component
 public class JwtAuthFilter implements GlobalFilter, Ordered {
 
-    private final String SECRET;
+    private final JwtService jwtService;
 
-    public JwtAuthFilter(@Value("${jwt.secret}") String JWT_SECRET_KEY) {
-        this.SECRET = JWT_SECRET_KEY;
+    public JwtAuthFilter(JwtService jwtService) {
+        this.jwtService = jwtService;
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        String path = exchange.getRequest().getURI().getPath();
-        if (path.startsWith("/auth")) {
+
+        ServerHttpRequest request = exchange.getRequest();
+        String path = request.getURI().getPath();
+        HttpMethod method = request.getMethod();
+
+        if (HttpMethod.OPTIONS.equals(method)) {
             return chain.filter(exchange);
         }
 
-        String authHeader = exchange.getRequest()
-                .getHeaders()
-                .getFirst(HttpHeaders.AUTHORIZATION);
+        if (path.startsWith("/auth") || path.startsWith("/actuator")) {
+            return chain.filter(exchange);
+        }
+
+        String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -45,31 +51,24 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
 
         Claims claims;
         try {
-            claims = Jwts.parserBuilder()
-                    .setSigningKey(Keys.hmacShaKeyFor(SECRET.getBytes()))
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+            if (!jwtService.isTokenValid(token)) {
+                throw new JwtException("Expired token");
+            }
+            claims = jwtService.parseToken(token);
         } catch (JwtException e) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
 
-        String userId = claims.getSubject();
-        String userUuid = claims.get("uuid", String.class);
-        String roles = claims.get("roles", String.class);
-
-        ServerHttpRequest mutatedRequest = exchange.getRequest()
-                .mutate()
-                // limpieza defensiva
+        ServerHttpRequest mutatedRequest = request.mutate()
                 .headers(h -> {
                     h.remove("X-Username");
                     h.remove("X-User-Uuid");
                     h.remove("X-User-Roles");
                 })
-                .header("X-Username", userId)
-                .header("X-User-Uuid", userUuid)
-                .header("X-User-Roles", roles)
+                .header("X-Username", jwtService.getUsername(claims))
+                .header("X-User-Uuid", jwtService.getUserUuid(claims))
+                .header("X-User-Roles", jwtService.getRoles(claims))
                 .build();
 
         return chain.filter(exchange.mutate().request(mutatedRequest).build());
@@ -77,6 +76,6 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -1; // muy temprano
+        return -1;
     }
 }
