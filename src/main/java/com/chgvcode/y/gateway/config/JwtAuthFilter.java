@@ -62,12 +62,10 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
 
         ServerHttpRequest mutatedRequest = request.mutate()
                 .headers(h -> {
-                    h.remove("X-Username");
                     h.remove("X-User-Uuid");
                     h.remove("X-User-Roles");
                 })
-                .header("X-Username", jwtService.getUsername(claims))
-                .header("X-User-Uuid", jwtService.getUserUuid(claims))
+                .header("X-User-Uuid", jwtService.getSubject(claims))
                 .header("X-User-Roles", jwtService.getRoles(claims))
                 .build();
 

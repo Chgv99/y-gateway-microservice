@@ -35,12 +35,8 @@ public class JwtService {
         return claims.getExpiration().after(new Date());
     }
 
-    public String getUsername(Claims claims) {
+    public String getSubject(Claims claims) {
         return claims.getSubject();
-    }
-
-    public String getUserUuid(Claims claims) {
-        return claims.get("userUuid", String.class);
     }
 
     public String getRoles(Claims claims) {
