@@ -36,10 +36,10 @@ spring:
                       - id: users-service
                         uri: lb://users
                         predicates:
-                            - Path=/api/user, /auth/register, /auth/login, /api/demo
+                            - Path=/api/users, /api/users/**, /auth/register, /auth/login, /api/demo
                       - id: posts-service
                         uri: lb://posts
                         predicates:
-                            - Path=/api/post
+                            - Path=/api/posts
 
             
