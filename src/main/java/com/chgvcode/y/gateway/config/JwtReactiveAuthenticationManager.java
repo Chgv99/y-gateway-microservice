@@ -1,5 +1,7 @@
 package com.chgvcode.y.gateway.config;
 
+import java.util.List;
+
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -10,9 +12,6 @@ import org.springframework.stereotype.Component;
 import com.chgvcode.y.gateway.auth.JwtService;
 
 import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class JwtReactiveAuthenticationManager implements ReactiveAuthenticationManager {
@@ -29,11 +28,9 @@ public class JwtReactiveAuthenticationManager implements ReactiveAuthenticationM
 
         if (jwtService.validateToken(token)) {
             String username = jwtService.extractUsername(token);
-            List<String> roles = jwtService.extractRoles(token);
+            String role = jwtService.extractRole(token);
 
-            List<SimpleGrantedAuthority> authorities = roles.stream()
-                    .map(SimpleGrantedAuthority::new)
-                    .collect(Collectors.toList());
+            List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
 
             User principal = new User(username, "", authorities);
             return Mono.just(new UsernamePasswordAuthenticationToken(principal, token, authorities));

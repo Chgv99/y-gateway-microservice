@@ -14,14 +14,10 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
 @Service
-public class JwtService {
+public class JwtService implements IJwtService {
 
     @Value("${security.jwt.secret}")
     private String secret;
-
-    private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes());
-    }
 
     public String extractUsername(String token) {
         return extractClaim(token, claims -> claims.get("username", String.class));
@@ -31,11 +27,11 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    public List<String> extractRoles(String token) {
-        return extractClaim(token, claims -> claims.get("roles", List.class));
+    public String extractRole(String token) {
+        return extractClaim(token, claims -> claims.get("role", String.class));
     }
 
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
@@ -49,10 +45,6 @@ public class JwtService {
                 .getPayload();
     }
 
-    private Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
     public Boolean validateToken(String token) {
         try {
             final String username = extractUsername(token);
@@ -60,5 +52,13 @@ public class JwtService {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private SecretKey getSigningKey() {
+        return Keys.hmacShaKeyFor(secret.getBytes());
+    }
+
+    private Boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
     }
 }
