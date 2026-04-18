@@ -2,9 +2,11 @@ package com.chgvcode.y.gateway.config;
 
 import java.util.List;
 
+import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -52,6 +54,20 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    @Bean
+    public GlobalFilter userUuidHeaderFilter(JwtServerSecurityContextRepository securityContextRepository) {
+        return (exchange, chain) -> {
+            Object userUuid = exchange.getAttribute("X-User-Uuid");
+            if (userUuid instanceof String) {
+                ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                        .header("X-User-Uuid", (String) userUuid)
+                        .build();
+                return chain.filter(exchange.mutate().request(mutatedRequest).build());
+            }
+            return chain.filter(exchange);
+        };
     }
 
 }

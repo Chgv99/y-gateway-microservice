@@ -38,5 +38,9 @@ public class JwtReactiveAuthenticationManager implements ReactiveAuthenticationM
 
         return Mono.empty();
     }
+
+    public String extractSubject(String token) {
+        return jwtService.extractSubject(token);
+    }
     
 }

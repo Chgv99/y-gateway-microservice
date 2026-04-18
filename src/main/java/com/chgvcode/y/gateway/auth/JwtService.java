@@ -31,6 +31,10 @@ public class JwtService implements IJwtService {
         return extractClaim(token, claims -> claims.get("role", String.class));
     }
 
+    public String extractSubject(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
+
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);

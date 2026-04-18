@@ -35,7 +35,11 @@ public class JwtServerSecurityContextRepository implements ServerSecurityContext
 
             return authenticationManager
                     .authenticate(authRequest)
-                    .map(SecurityContextImpl::new);
+                    .map(auth -> {
+                        String userUuid = authenticationManager.extractSubject(token);
+                        exchange.getAttributes().put("X-User-Uuid", userUuid);
+                        return new SecurityContextImpl(auth);
+                    });
         }
 
         return Mono.empty();
